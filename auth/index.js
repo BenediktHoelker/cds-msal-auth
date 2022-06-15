@@ -11,11 +11,12 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 
 // var indexRouter = require("./routes/index");
-const cds = require("@sap/cds");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
-cds.on("bootstrap", async (app) => {
+const msalAuth = function (app) {
+  const router = express.Router();
+
   app.use(logger("dev"));
   app.use(express.json());
   app.use(cookieParser());
@@ -48,6 +49,8 @@ cds.on("bootstrap", async (app) => {
       res.redirect("/auth/signin");
     }
   });
-});
 
-module.exports = cds.server;
+  return router;
+};
+
+module.exports = msalAuth;
