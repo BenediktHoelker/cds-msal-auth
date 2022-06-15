@@ -1,0 +1,27 @@
+{
+  "name": "cds-msal-auth",
+  "version": "0.0.1",
+  "description": "SAP CAP MSAL Authentication",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BenediktHoelker/cds-msal-auth.git"
+  },
+  "keywords": [
+    "cap",
+    "sap",
+    "msal",
+    "azure",
+    "azure-ad",
+    "authentication"
+  ],
+  "author": "Benedikt Hölker",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BenediktHoelker/cds-msal-auth/issues"
+  },
+  "homepage": "https://github.com/BenediktHoelker/cds-msal-auth#readme"
+}
