@@ -24,6 +24,7 @@ module.exports = (req, res, next) => {
   DEBUG?.(`[auth] - user defined?${!!user}`);
   if (user) {
     req.user = new CDSUser(user);
+    req.user.accessToken = req.session.accessToken;
     next();
   } else {
     res.status(401).send();
