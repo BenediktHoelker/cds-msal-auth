@@ -43,7 +43,9 @@ const msalAuth = function (app) {
   app.use("/auth", authRouter);
 
   app.use("/", (req, res, next) => {
+    // Store the requested URL in order to navigate to it after the redirect (that provided the token)
     req.session.prevUrl = req.url;
+
     if (req.session.isAuthenticated || req.path === "/auth/signin") {
       next();
     } else {
