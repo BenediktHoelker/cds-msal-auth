@@ -43,6 +43,7 @@ const msalAuth = function (app) {
   app.use("/auth", authRouter);
 
   app.use("/", (req, res, next) => {
+    req.session.prevUrl = req.url;
     if (req.session.isAuthenticated || req.path === "/auth/signin") {
       next();
     } else {
