@@ -29,7 +29,7 @@ const msalConfig = {
 };
 
 const { POST_LOGOUT_REDIRECT_URI, REDIRECT_URI, GRAPH_SCOPES } = process.env;
-const GRAPH_ME_ENDPOINT = `${process.env.GRAPH_API_ENDPOINT}v1.0/me`;
+const GRAPH_ME_ENDPOINT = `${process.env.GRAPH_API_ENDPOINT}/v1.0/me`;
 
 module.exports = {
   msalConfig,
