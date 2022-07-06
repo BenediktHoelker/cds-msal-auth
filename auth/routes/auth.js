@@ -7,7 +7,6 @@ const express = require("express");
 const msal = require("@azure/msal-node");
 const {
   msalConfig,
-  GRAPH_SCOPES,
   REDIRECT_URI,
   POST_LOGOUT_REDIRECT_URI,
 } = require("../authConfig");
@@ -131,11 +130,11 @@ router.get("/acquireToken", async (req, res, next) => {
 
   const authCodeUrlRequestParams = {
     state,
-    scopes: GRAPH_SCOPES,
+    scopes: ["User.Read", "Calendars.Read"],
   };
 
   const authCodeRequestParams = {
-    scopes: GRAPH_SCOPES,
+    scopes: ["User.Read", "Calendars.Read"],
   };
 
   // trigger the first leg of auth code flow
