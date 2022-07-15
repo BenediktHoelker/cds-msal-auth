@@ -12,6 +12,14 @@ const CDSUser = class extends cds.User {
   }
 };
 
+function formatSchema(tenantID) {
+  // postgreSQL does not allow first character "0" in schema name
+  let schema = `_${tenantID}`;
+  // postgreSQL seems to error when passing '-' to schema name
+  schema = schema.replace(/-/g, "");
+  return schema;
+}
+
 /**
  * Overwriting the standard auth function and letting the custom
  * Passport strategy take the wheel
@@ -20,11 +28,13 @@ const CDSUser = class extends cds.User {
  * @param {function} next
  */
 module.exports = (req, res, next) => {
-  const user = req.session.account?.username;
+  const { tenantId, user } = req.session.account || {};
   DEBUG?.(`[auth] - user defined?${!!user}`);
   if (user) {
     req.user = new CDSUser(user);
     req.user.accessToken = req.session.accessToken;
+    req.user.tenant = tenantId;
+    req.user.schema = formatSchema(tenantId);
     next();
   } else {
     res.status(401).send();
