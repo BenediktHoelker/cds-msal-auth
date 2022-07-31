@@ -30,10 +30,11 @@ function formatSchema(tenantID) {
 module.exports = (req, res, next) => {
   const { tenantId, username } = req.session.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
+
   if (username) {
-    req.user = new CDSUser(username);
+    req.user = new CDSUser({ id: username, tenant: tenantId });
     req.user.accessToken = req.session.accessToken;
-    req.user.tenant = tenantId;
+    req.user.attr.tenant = tenantId;
     req.user.schema = formatSchema(tenantId);
     req.headers.authentication = true;
     next();
