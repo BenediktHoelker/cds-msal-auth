@@ -8,7 +8,7 @@ DEBUG?.("[auth] - loading custom auth handler");
 const CDSUser = class extends cds.User {
   is(role) {
     DEBUG?.(`[auth] - ${role}`);
-    return role === "any" || role === "authenticated-user" || this._roles[role];
+    return role === "any" || this._roles[role];
   }
 };
 
@@ -32,7 +32,14 @@ module.exports = (req, res, next) => {
   DEBUG?.(`[auth] - user defined?${!!username}`);
 
   if (username) {
-    req.user = new CDSUser({ id: username, tenant: tenantId });
+    const { roles } = req.session.account.idTokenClaims;
+
+    req.user = new CDSUser({
+      id: username,
+      tenant: tenantId,
+      _roles: ["authenticated-user", ...roles],
+    });
+
     req.user.accessToken = req.session.accessToken;
     req.user.attr.tenant = tenantId;
     req.user.schema = formatSchema(tenantId);
