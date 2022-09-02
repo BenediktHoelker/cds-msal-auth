@@ -32,7 +32,7 @@ module.exports = (req, res, next) => {
   DEBUG?.(`[auth] - user defined?${!!username}`);
 
   if (username) {
-    const { roles } = req.session.account.idTokenClaims;
+    const { roles } = req.session.account.idTokenClaims || [];
 
     req.user = new CDSUser({
       id: username,
