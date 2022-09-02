@@ -95,7 +95,7 @@ router.get("/signin", async (req, res, next) => {
      * By default, MSAL Node will add OIDC scopes to the auth code url request. For more information, visit:
      * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
      */
-    scopes: [],
+    scopes: ["User.Read", "Calendars.Read"],
   };
 
   const authCodeRequestParams = {
@@ -103,7 +103,7 @@ router.get("/signin", async (req, res, next) => {
      * By default, MSAL Node will add OIDC scopes to the auth code request. For more information, visit:
      * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
      */
-    scopes: [],
+    scopes: ["User.Read", "Calendars.Read"],
   };
 
   // trigger the first leg of auth code flow
