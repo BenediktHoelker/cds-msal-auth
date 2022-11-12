@@ -46,7 +46,15 @@ const msalAuth = function (app) {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
     req.session.prevUrl = req.url;
 
-    if (req.session.isAuthenticated || req.path === "/auth/signin") {
+    if (
+      req.session.isAuthenticated ||
+      req.path === "/auth/signin" ||
+      req.path.includes("/resources") ||
+      req.path.includes(".woff2") ||
+      req.path.includes("iot_logo") ||
+      req.path.includes("i18n") ||
+      req.path.includes("manifest.webmanifest")
+    ) {
       next();
     } else {
       res.redirect("/auth/signin");
