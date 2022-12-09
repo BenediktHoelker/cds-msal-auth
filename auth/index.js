@@ -14,6 +14,34 @@ const logger = require("morgan");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
+const { msalInstance } = require("./authConfig");
+
+// Initiates Acquire Token Silent flow
+// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
+async function acquireTokenSilent(req) {
+  // Find all accounts
+  const msalTokenCache = msalInstance.getTokenCache();
+
+  // Account selection logic would go here
+  // TODO: logic for being logged in to multiple accounts at the same time!
+  const [account] = await msalTokenCache.getAllAccounts();
+
+  // Build silent request after account is selected
+  const silentRequest = {
+    account,
+    scopes: ["User.Read", "Calendars.Read"],
+  };
+
+  // Acquire Token Silently to be used in MS Graph call
+  return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
+    req.session.accessToken = response.accessToken;
+    req.session.idToken = response.idToken;
+    req.session.account = response.account;
+    req.session.homeAccountId = response.account.homeAccountId;
+    req.session.isAuthenticated = true;
+  });
+}
+
 const msalAuth = function (app) {
   const router = express.Router();
 
@@ -42,21 +70,14 @@ const msalAuth = function (app) {
   app.use("/users", usersRouter);
   app.use("/auth", authRouter);
 
-  app.use("/", (req, res, next) => {
+  app.use("/", async (req, res, next) => {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
     req.session.prevUrl = req.url;
 
-    if (
-      req.session.isAuthenticated ||
-      req.path === "/auth/signin" ||
-      req.path.includes("/resources") ||
-      req.path.includes(".woff2") ||
-      req.path.includes("iot_logo") ||
-      req.path.includes("i18n") ||
-      req.path.includes("manifest.webmanifest")
-    ) {
+    try {
+      await acquireTokenSilent(req);
       next();
-    } else {
+    } catch (error) {
       res.redirect("/auth/signin");
     }
   });

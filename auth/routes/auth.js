@@ -4,16 +4,15 @@
  */
 
 const express = require("express");
-const msal = require("@azure/msal-node");
 const {
   msalConfig,
+  msalInstance,
+  cryptoProvider,
   REDIRECT_URI,
   POST_LOGOUT_REDIRECT_URI,
 } = require("../authConfig");
 
 const router = express.Router();
-const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
-const cryptoProvider = new msal.CryptoProvider();
 
 /**
  * Prepares the auth code request parameters and initiates the first leg of auth code flow
@@ -160,11 +159,12 @@ router.post("/redirect", async (req, res, next) => {
         const tokenResponse = await msalInstance.acquireTokenByCode(
           req.session.authCodeRequest
         );
+
         req.session.accessToken = tokenResponse.accessToken;
         req.session.idToken = tokenResponse.idToken;
         req.session.account = tokenResponse.account;
+        req.session.homeAccountId = tokenResponse.account.homeAccountId;
         req.session.isAuthenticated = true;
-
         res.redirect(state.redirectTo);
       } catch (error) {
         next(error);
