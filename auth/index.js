@@ -86,8 +86,12 @@ const msalAuth = function (app) {
     // }
 
     if (req.path.includes("/v2")) {
-      acquireTokenSilent(req);
-      next();
+      try {
+        acquireTokenSilent(req);
+        next();
+      } catch (error) {
+        res.redirect("/auth/signin");
+      }
     } else if (
       req.session.isAuthenticated ||
       req.path === "/auth/signin" ||
