@@ -84,6 +84,7 @@ router.get("/signin", async (req, res, next) => {
     JSON.stringify({
       csrfToken: req.session.csrfToken,
       redirectTo: req.session.prevUrl || "/",
+      // redirectTo: "/",
     })
   );
 
