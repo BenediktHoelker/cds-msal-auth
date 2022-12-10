@@ -103,7 +103,12 @@ const msalAuth = function (app) {
     ) {
       next();
     } else {
-      res.redirect("/auth/signin");
+      try {
+        await acquireTokenSilent(req);
+        next();
+      } catch (error) {
+        res.redirect("/auth/signin");
+      }
     }
   });
 

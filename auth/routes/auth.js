@@ -43,7 +43,6 @@ async function redirectToAuthCodeUrl(
    * By manipulating the request objects below before each request, we can obtain
    * auth artifacts with desired claims. For more information, visit:
    * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationurlrequest
-   * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationcoderequest
    * */
 
   req.session.authCodeUrlRequest = {
