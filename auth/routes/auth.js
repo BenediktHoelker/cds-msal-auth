@@ -74,56 +74,10 @@ router.get("/signin", async (req, res, next) => {
   // create a GUID for crsf
   req.session.csrfToken = cryptoProvider.createNewGuid();
 
-  /**
-   * The MSAL Node library allows you to pass your custom state as state parameter in the Request object.
-   * The state parameter can also be used to encode information of the app's state before redirect.
-   * You can pass the user's state in the app, such as the page or view they were on, as input to this parameter.
-   */
   const state = cryptoProvider.base64Encode(
     JSON.stringify({
       csrfToken: req.session.csrfToken,
-      // redirectTo: req.session.prevUrl || "/",
       redirectTo: "/",
-    })
-  );
-
-  const authCodeUrlRequestParams = {
-    state,
-
-    /**
-     * By default, MSAL Node will add OIDC scopes to the auth code url request. For more information, visit:
-     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
-     */
-    scopes: ["User.Read", "Calendars.ReadWrite"],
-  };
-
-  const authCodeRequestParams = {
-    /**
-     * By default, MSAL Node will add OIDC scopes to the auth code request. For more information, visit:
-     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
-     */
-    scopes: ["User.Read", "Calendars.ReadWrite"],
-  };
-
-  // trigger the first leg of auth code flow
-  return redirectToAuthCodeUrl(
-    req,
-    res,
-    next,
-    authCodeUrlRequestParams,
-    authCodeRequestParams
-  );
-});
-
-router.get("/acquireToken", async (req, res, next) => {
-  // create a GUID for csrf
-  req.session.csrfToken = cryptoProvider.createNewGuid();
-
-  // encode the state param
-  const state = cryptoProvider.base64Encode(
-    JSON.stringify({
-      csrfToken: req.session.csrfToken,
-      redirectTo: "/users/profile",
     })
   );
 
@@ -178,11 +132,6 @@ router.post("/redirect", async (req, res, next) => {
 });
 
 router.get("/signout", (req, res) => {
-  /**
-   * Construct a logout URI and redirect the user to end the
-   * session with Azure AD. For more information, visit:
-   * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
-   */
   const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
 
   req.session.destroy(() => {

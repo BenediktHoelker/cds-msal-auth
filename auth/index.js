@@ -44,6 +44,15 @@ async function acquireTokenSilent(req) {
   });
 }
 
+// custom middleware to check auth state
+function isAuthenticated(req, res, next) {
+  if (!req.session.isAuthenticated) {
+    return res.redirect("/auth/signin"); // redirect to sign-in route
+  }
+
+  next();
+}
+
 const msalAuth = function (app) {
   const router = express.Router();
 
@@ -70,9 +79,6 @@ const msalAuth = function (app) {
 
   // app.use("/", indexRouter);
 
-  app.use("/users", usersRouter);
-  app.use("/auth", authRouter);
-
   app.use("/", async (req, res, next) => {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
     req.session.prevUrl = req.url;
@@ -88,32 +94,44 @@ const msalAuth = function (app) {
     //   next();
     // }
 
-    if (req.path.includes("/v2")) {
-      try {
-        await acquireTokenSilent(req);
-        next();
-      } catch (error) {
-        req.reject(error);
-      }
-    } else if (
-      req.session.isAuthenticated ||
-      req.path === "/auth/signin" ||
-      req.path.includes("/resources") ||
-      req.path.includes(".woff2") ||
-      req.path.includes("iot_logo") ||
-      req.path.includes("i18n") ||
-      req.path.includes("manifest.webmanifest")
+    if (
+      !req.session.isAuthenticated &&
+      (req.path === "/" || req.path.includes("index.html"))
     ) {
-      next();
-    } else {
-      // try {
-      //   await acquireTokenSilent(req);
-      //   next();
-      // } catch (error) {
-      // }
       res.redirect("/auth/signin");
+    } else if (req.path.includes("/v2")) {
+      if (req.session.account) {
+        await acquireTokenSilent(req);
+      }
+      //  else {
+      //   res.redirect("/auth/signin");
+      // }
     }
+
+    next();
+
+    // else if (
+    //   req.session.isAuthenticated ||
+    //   req.path === "/auth/signin" ||
+    //   req.path.includes("/resources") ||
+    //   req.path.includes(".woff2") ||
+    //   req.path.includes("iot_logo") ||
+    //   req.path.includes("i18n") ||
+    //   req.path.includes("manifest.webmanifest")
+    // ) {
+    //   next();
+    // } else {
+    //   // try {
+    //   //   await acquireTokenSilent(req);
+    //   //   next();
+    //   // } catch (error) {
+    //   // }
+    //   return res.redirect("/auth/signin");
+    // }
   });
+
+  app.use("/users", usersRouter);
+  app.use("/auth", authRouter);
 
   return router;
 };
