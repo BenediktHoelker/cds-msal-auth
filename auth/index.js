@@ -24,12 +24,14 @@ async function acquireTokenSilent(req) {
 
   // Account selection logic would go here
   // TODO: logic for being logged in to multiple accounts at the same time!
-  const [account] = await msalTokenCache.getAllAccounts();
+  // const [account] = await msalTokenCache.getAllAccounts();
+
+  const { account } = req.session; // Select Account code
 
   // Build silent request after account is selected
   const silentRequest = {
     account,
-    scopes: ["User.Read", "Calendars.Read"],
+    scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
   // Acquire Token Silently to be used in MS Graph call
@@ -67,6 +69,7 @@ const msalAuth = function (app) {
   );
 
   // app.use("/", indexRouter);
+
   app.use("/users", usersRouter);
   app.use("/auth", authRouter);
 
@@ -87,7 +90,7 @@ const msalAuth = function (app) {
 
     if (req.path.includes("/v2")) {
       try {
-        acquireTokenSilent(req);
+        await acquireTokenSilent(req);
         next();
       } catch (error) {
         res.redirect("/auth/signin");
@@ -103,12 +106,12 @@ const msalAuth = function (app) {
     ) {
       next();
     } else {
-      try {
-        await acquireTokenSilent(req);
-        next();
-      } catch (error) {
-        res.redirect("/auth/signin");
-      }
+      // try {
+      //   await acquireTokenSilent(req);
+      //   next();
+      // } catch (error) {
+      // }
+      res.redirect("/auth/signin");
     }
   });
 

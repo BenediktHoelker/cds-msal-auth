@@ -25,17 +25,17 @@ function formatSchema(tenantID) {
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req, res, next) {
   // Find all accounts
-  // const msalTokenCache = msalInstance.getTokenCache();
+  const msalTokenCache = msalInstance.getTokenCache();
 
   // Account selection logic would go here
-  // const cachedAccounts = await msalTokenCache.getAllAccounts();
+  // const [account] = await msalTokenCache.getAllAccounts();
 
   const { account } = req.session; // Select Account code
 
   // Build silent request after account is selected
   const silentRequest = {
     account,
-    scopes: ["User.Read", "Calendars.Read"],
+    scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
   // Acquire Token Silently to be used in MS Graph call
