@@ -56,7 +56,7 @@ async function acquireTokenSilent(req, res, next) {
  * @param {function} next
  */
 module.exports = async (req, res, next) => {
-  await acquireTokenSilent(req);
+  // await acquireTokenSilent(req);
 
   const { tenantId, username } = req.session.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);

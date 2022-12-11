@@ -93,7 +93,7 @@ const msalAuth = function (app) {
         await acquireTokenSilent(req);
         next();
       } catch (error) {
-        res.redirect("/auth/signin");
+        req.reject(error);
       }
     } else if (
       req.session.isAuthenticated ||
