@@ -106,9 +106,8 @@ const msalAuth = function (app) {
       //  else {
       //   res.redirect("/auth/signin");
       // }
-    }
-
-    next();
+      next();
+    } else next();
 
     // else if (
     //   req.session.isAuthenticated ||
