@@ -81,52 +81,23 @@ const msalAuth = function (app) {
 
   app.use("/", async (req, res, next) => {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
+    // TODO: use SPA authentcation. The current solution will never know the browser hash
     req.session.prevUrl = req.url;
-
-    // if (req.path.includes("/v2")) {
-    //   try {
-    //     await acquireTokenSilent(req);
-    //     next();
-    //   } catch (error) {
-    //     res.redirect("/auth/signin");
-    //   }
-    // } else {
-    //   next();
-    // }
 
     if (
       !req.session.isAuthenticated &&
-      (req.path === "/" || req.path.includes("index.html"))
+      (req.path === "/" ||
+        req.path.includes("index.html") ||
+        // TODO: DIRTY WORKAROUND! Use a file that is always queried, and never served by the service-worker. Thus the actual application is forced to trigger a redirect and get a valid authentication.
+        req.path.includes(".properties"))
     ) {
       res.redirect("/auth/signin");
     } else if (req.path.includes("/v2")) {
       if (req.session.account) {
         await acquireTokenSilent(req);
       }
-      //  else {
-      //   res.redirect("/auth/signin");
-      // }
       next();
     } else next();
-
-    // else if (
-    //   req.session.isAuthenticated ||
-    //   req.path === "/auth/signin" ||
-    //   req.path.includes("/resources") ||
-    //   req.path.includes(".woff2") ||
-    //   req.path.includes("iot_logo") ||
-    //   req.path.includes("i18n") ||
-    //   req.path.includes("manifest.webmanifest")
-    // ) {
-    //   next();
-    // } else {
-    //   // try {
-    //   //   await acquireTokenSilent(req);
-    //   //   next();
-    //   // } catch (error) {
-    //   // }
-    //   return res.redirect("/auth/signin");
-    // }
   });
 
   app.use("/users", usersRouter);
