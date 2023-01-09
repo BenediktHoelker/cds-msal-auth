@@ -106,13 +106,18 @@ router.post("/redirect", async (req, res, next) => {
 
     // check if csrfToken matches
     if (state.csrfToken === req.session.csrfToken) {
-      req.session.authCodeRequest.code = req.body.code; // authZ code
+      req.session.authCodeRequest.code = req.body.code; // auth code
       req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier; // PKCE Code Verifier
 
       try {
         const tokenResponse = await msalInstance.acquireTokenByCode(
           req.session.authCodeRequest
         );
+
+        const tokenCache = msalInstance.getTokenCache().serialize();
+        const refreshTokenObject = JSON.parse(tokenCache).RefreshToken;
+        const refreshToken =
+          refreshTokenObject[Object.keys(refreshTokenObject)[0]].secret;
 
         req.session.accessToken = tokenResponse.accessToken;
         req.session.idToken = tokenResponse.idToken;

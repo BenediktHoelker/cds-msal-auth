@@ -16,43 +16,6 @@ const authRouter = require("./routes/auth");
 
 const { msalInstance } = require("./authConfig");
 
-// Initiates Acquire Token Silent flow
-// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
-async function acquireTokenSilent(req) {
-  // Find all accounts
-  const msalTokenCache = msalInstance.getTokenCache();
-
-  // Account selection logic would go here
-  // TODO: logic for being logged in to multiple accounts at the same time!
-  // const [account] = await msalTokenCache.getAllAccounts();
-
-  const { account } = req.session; // Select Account code
-
-  // Build silent request after account is selected
-  const silentRequest = {
-    account,
-    scopes: ["User.Read", "Calendars.ReadWrite"],
-  };
-
-  // Acquire Token Silently to be used in MS Graph call
-  return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
-    req.session.accessToken = response.accessToken;
-    req.session.idToken = response.idToken;
-    req.session.account = response.account;
-    req.session.homeAccountId = response.account.homeAccountId;
-    req.session.isAuthenticated = true;
-  });
-}
-
-// custom middleware to check auth state
-function isAuthenticated(req, res, next) {
-  if (!req.session.isAuthenticated) {
-    return res.redirect("/auth/signin"); // redirect to sign-in route
-  }
-
-  next();
-}
-
 const msalAuth = function (app) {
   const router = express.Router();
 
@@ -78,30 +41,27 @@ const msalAuth = function (app) {
   );
 
   // app.use("/", indexRouter);
+  app.use("/users", usersRouter);
+  app.use("/auth", authRouter);
 
-  app.use("/", async (req, res, next) => {
+  app.use("/", (req, res, next) => {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
-    // TODO: use SPA authentcation. The current solution will never know the browser hash
     req.session.prevUrl = req.url;
 
     if (
-      !req.session.isAuthenticated &&
-      (req.path === "/" ||
-        req.path.includes("index.html") ||
-        // TODO: DIRTY WORKAROUND! Use a file that is always queried, and never served by the service-worker. Thus the actual application is forced to trigger a redirect and get a valid authentication.
-        req.path.includes(".properties"))
+      req.session.isAuthenticated ||
+      req.path === "/auth/signin" ||
+      req.path.includes("/resources") ||
+      req.path.includes(".woff2") ||
+      req.path.includes("iot_logo") ||
+      req.path.includes("i18n") ||
+      req.path.includes("manifest.webmanifest")
     ) {
-      res.redirect("/auth/signin");
-    } else if (req.path.includes("/v2")) {
-      if (req.session.account) {
-        await acquireTokenSilent(req);
-      }
       next();
-    } else next();
+    } else {
+      res.redirect("/auth/signin");
+    }
   });
-
-  app.use("/users", usersRouter);
-  app.use("/auth", authRouter);
 
   return router;
 };

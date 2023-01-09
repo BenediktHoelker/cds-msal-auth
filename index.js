@@ -13,14 +13,6 @@ const CDSUser = class extends cds.User {
   }
 };
 
-function formatSchema(tenantID) {
-  // postgreSQL does not allow first character "0" in schema name
-  let schema = `_${tenantID}`;
-  // postgreSQL seems to error when passing '-' to schema name
-  schema = schema.replace(/-/g, "");
-  return schema;
-}
-
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req, res, next) {
@@ -30,7 +22,7 @@ async function acquireTokenSilent(req, res, next) {
   // Account selection logic would go here
   // const [account] = await msalTokenCache.getAllAccounts();
 
-  const { account } = req.session; // Select Account code
+  const { account } = req.session || {}; // Select Account code
 
   // Build silent request after account is selected
   const silentRequest = {
@@ -48,6 +40,14 @@ async function acquireTokenSilent(req, res, next) {
   req.session.isAuthenticated = true;
 }
 
+function formatSchema(tenantID) {
+  // postgreSQL does not allow first character "0" in schema name
+  let schema = `_${tenantID}`;
+  // postgreSQL seems to error when passing '-' to schema name
+  schema = schema.replace(/-/g, "");
+  return schema;
+}
+
 /**
  * Overwriting the standard auth function and letting the custom
  * Passport strategy take the wheel
@@ -56,9 +56,9 @@ async function acquireTokenSilent(req, res, next) {
  * @param {function} next
  */
 module.exports = async (req, res, next) => {
-  // await acquireTokenSilent(req);
+  acquireTokenSilent(req);
 
-  const { tenantId, username } = req.session.account || {};
+  const { tenantId, username } = req.session?.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
 
   if (username) {
