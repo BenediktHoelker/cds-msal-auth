@@ -114,10 +114,10 @@ router.post("/redirect", async (req, res, next) => {
           req.session.authCodeRequest
         );
 
-        const tokenCache = msalInstance.getTokenCache().serialize();
-        const refreshTokenObject = JSON.parse(tokenCache).RefreshToken;
-        const refreshToken =
-          refreshTokenObject[Object.keys(refreshTokenObject)[0]].secret;
+        // const tokenCache = msalInstance.getTokenCache().serialize();
+        // const refreshTokenObject = JSON.parse(tokenCache).RefreshToken;
+        // const refreshToken =
+        //   refreshTokenObject[Object.keys(refreshTokenObject)[0]].secret;
 
         req.session.accessToken = tokenResponse.accessToken;
         req.session.idToken = tokenResponse.idToken;
