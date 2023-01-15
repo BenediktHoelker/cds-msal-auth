@@ -52,6 +52,7 @@ const msalAuth = function (app) {
       req.session.isAuthenticated ||
       req.path === "/auth/signin" ||
       req.path.includes("/resources") ||
+      req.path.includes("service-worker.js") ||
       req.path.includes(".woff2") ||
       req.path.includes("iot_logo") ||
       req.path.includes("i18n") ||
