@@ -1,8 +1,9 @@
 const cds = require("@sap/cds");
+const msal = require("@azure/msal-node");
 
 // To debug this module set export DEBUG=cap-msal-auth
 const DEBUG = cds.DEBUG?.("cap-msal-auth");
-const { msalInstance } = require("./auth/authConfig");
+const { msalConfig, msalInstance } = require("./auth/authConfig");
 
 DEBUG?.("[auth] - loading custom auth handler");
 
@@ -17,6 +18,7 @@ const CDSUser = class extends cds.User {
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req, res, next) {
   // Find all accounts
+  // const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
   const msalTokenCache = msalInstance.getTokenCache();
 
   // Account selection logic would go here
