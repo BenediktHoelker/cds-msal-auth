@@ -32,8 +32,15 @@ async function acquireTokenSilent(req, res, next) {
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
-  // Acquire Token Silently to be used in MS Graph call
-  const response = await msalInstance.acquireTokenSilent(silentRequest);
+  let response;
+
+  try {
+    // Acquire Token Silently to be used in MS Graph call
+    response = await msalInstance.acquireTokenSilent(silentRequest);
+  } catch (error) {
+    res.redirect("/auth/signin");
+    return;
+  }
 
   req.session.accessToken = response.accessToken;
   req.session.idToken = response.idToken;
@@ -58,7 +65,7 @@ function formatSchema(tenantID) {
  * @param {function} next
  */
 module.exports = async (req, res, next) => {
-  acquireTokenSilent(req);
+  await acquireTokenSilent(req, res);
 
   const { tenantId, username } = req.session?.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
