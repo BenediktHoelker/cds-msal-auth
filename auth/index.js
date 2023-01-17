@@ -51,12 +51,14 @@ const msalAuth = function (app) {
     if (
       req.session.isAuthenticated ||
       req.path === "/auth/signin" ||
+      // req.path === "/index.html" ||
       req.path.includes("/resources") ||
       req.path.includes("service-worker.js") ||
       req.path.includes(".woff2") ||
       req.path.includes("iot_logo") ||
       req.path.includes("i18n") ||
       req.path.includes("favicon.ico") ||
+      req.path.includes("manifest.json") ||
       req.path.includes("manifest.webmanifest")
     ) {
       next();
