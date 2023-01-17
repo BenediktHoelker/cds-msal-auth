@@ -32,21 +32,13 @@ async function acquireTokenSilent(req, res, next) {
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
-  let response;
-
-  try {
-    // Acquire Token Silently to be used in MS Graph call
-    response = await msalInstance.acquireTokenSilent(silentRequest);
-  } catch (error) {
-    res.redirect("/auth/signin");
-    return;
-  }
-
-  req.session.accessToken = response.accessToken;
-  req.session.idToken = response.idToken;
-  req.session.account = response.account;
-  req.session.homeAccountId = response.account.homeAccountId;
-  req.session.isAuthenticated = true;
+  return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
+    req.session.accessToken = response.accessToken;
+    req.session.idToken = response.idToken;
+    req.session.account = response.account;
+    req.session.homeAccountId = response.account.homeAccountId;
+    req.session.isAuthenticated = true;
+  });
 }
 
 function formatSchema(tenantID) {
@@ -65,7 +57,16 @@ function formatSchema(tenantID) {
  * @param {function} next
  */
 module.exports = async (req, res, next) => {
-  await acquireTokenSilent(req, res);
+  try {
+    // Acquire Token Silently to be used in MS Graph call
+    // TODO: reconsider performance (atm) each request waits for a refreshed token
+    await acquireTokenSilent(req, res);
+  } catch (error) {
+    res.status(401).send({
+      message: "The MSGraph Access Token has expired. Please re-login.",
+    });
+    return;
+  }
 
   const { tenantId, username } = req.session?.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
