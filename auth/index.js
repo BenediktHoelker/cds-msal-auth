@@ -37,6 +37,7 @@ async function acquireTokenSilent(req, res, next) {
 
   return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
     req.session.accessToken = response.accessToken;
+    req.user.accessToken = response.accessToken;
   });
 }
 
