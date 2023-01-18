@@ -10,11 +10,35 @@ const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 
+const msal = require("@azure/msal-node");
+const { msalConfig, msalInstance } = require("./authConfig");
+
 // var indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
-const { msalInstance } = require("./authConfig");
+// Initiates Acquire Token Silent flow
+// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
+async function acquireTokenSilent(req, res, next) {
+  // Find all accounts
+  // const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
+  const msalTokenCache = msalInstance.getTokenCache();
+
+  // Account selection logic would go here
+  // const [account] = await msalTokenCache.getAllAccounts();
+
+  const { account } = req.session || {}; // Select Account code
+
+  // Build silent request after account is selected
+  const silentRequest = {
+    account,
+    scopes: ["User.Read", "Calendars.ReadWrite"],
+  };
+
+  return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
+    req.session.accessToken = response.accessToken;
+  });
+}
 
 const msalAuth = function (app) {
   const router = express.Router();
@@ -44,9 +68,20 @@ const msalAuth = function (app) {
   app.use("/users", usersRouter);
   app.use("/auth", authRouter);
 
-  app.use("/", (req, res, next) => {
+  app.use("/", async (req, res, next) => {
     // Store the requested URL in order to navigate to it after the redirect (that provided the token)
     req.session.prevUrl = req.url;
+
+    if (req.path.includes("/v2/") || req.path.includes("/v4/")) {
+      try {
+        // Acquire Token Silently to be used in MS Graph call
+        // TODO: reconsider performance (atm) each request waits for a refreshed token
+        await acquireTokenSilent(req, res);
+      } catch (error) {
+        res.redirect("/auth/signin");
+        return;
+      }
+    }
 
     if (
       req.session.isAuthenticated ||
