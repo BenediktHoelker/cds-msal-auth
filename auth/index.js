@@ -37,13 +37,10 @@ async function acquireTokenSilent(req, res, next) {
 
   return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
     req.session.accessToken = response.accessToken;
-    req.user.accessToken = response.accessToken;
   });
 }
 
-const msalAuth = function (app) {
-  const router = express.Router();
-
+module.exports = (app) => {
   app.use(logger("dev"));
   app.use(express.json());
   app.use(cookieParser());
@@ -58,7 +55,7 @@ const msalAuth = function (app) {
     session({
       secret: process.env.EXPRESS_SESSION_SECRET,
       resave: false,
-      saveUninitialized: false,
+      saveUninitialized: true,
       cookie: {
         secure: false, // set this to true on production
       },
@@ -70,16 +67,15 @@ const msalAuth = function (app) {
   app.use("/auth", authRouter);
 
   app.use("/", async (req, res, next) => {
-    // Store the requested URL in order to navigate to it after the redirect (that provided the token)
-    req.session.prevUrl = req.url;
-
     if (req.path.includes("/v2/") || req.path.includes("/v4/")) {
       try {
         // Acquire Token Silently to be used in MS Graph call
         // TODO: reconsider performance (atm) each request waits for a refreshed token
         await acquireTokenSilent(req, res);
       } catch (error) {
-        res.redirect("/auth/signin");
+        res.send(401, {
+          message: "Your session has expired. Please re-login.",
+        });
         return;
       }
     }
@@ -102,8 +98,4 @@ const msalAuth = function (app) {
       res.redirect("/auth/signin");
     }
   });
-
-  return router;
 };
-
-module.exports = msalAuth;

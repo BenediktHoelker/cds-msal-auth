@@ -68,6 +68,10 @@ async function redirectToAuthCodeUrl(
     const authCodeUrlResponse = await msalInstance.getAuthCodeUrl(
       req.session.authCodeUrlRequest
     );
+    console.log("Session:");
+    console.log(req.session);
+    console.log("CSRF Token:");
+    console.log(req.session.csrfToken);
     res.redirect(authCodeUrlResponse);
   } catch (error) {
     next(error);
@@ -123,6 +127,11 @@ router.get("/signin", async (req, res, next) => {
 router.post("/redirect", async (req, res, next) => {
   if (req.body.state) {
     const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
+
+    console.log("Session after redirect:");
+    console.log(req.session);
+    console.log("CSRF Token after redirect:");
+    console.log(req.session.csrfToken);
 
     // check if csrfToken matches
     if (state.csrfToken === req.session.csrfToken) {
