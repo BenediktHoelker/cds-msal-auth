@@ -48,7 +48,6 @@ async function redirectToAuthCodeUrl(
    * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationurlrequest
    * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationcoderequest
    * */
-
   req.session.authCodeUrlRequest = {
     redirectUri: REDIRECT_URI,
     responseMode: "form_post", // recommended for confidential clients
@@ -68,10 +67,6 @@ async function redirectToAuthCodeUrl(
     const authCodeUrlResponse = await msalInstance.getAuthCodeUrl(
       req.session.authCodeUrlRequest
     );
-    console.log("Session:");
-    console.log(req.session);
-    console.log("CSRF Token:");
-    console.log(req.session.csrfToken);
     res.redirect(authCodeUrlResponse);
   } catch (error) {
     next(error);
@@ -128,11 +123,6 @@ router.post("/redirect", async (req, res, next) => {
   if (req.body.state) {
     const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
 
-    console.log("Session after redirect:");
-    console.log(req.session);
-    console.log("CSRF Token after redirect:");
-    console.log(req.session.csrfToken);
-
     // check if csrfToken matches
     if (state.csrfToken === req.session.csrfToken) {
       req.session.authCodeRequest.code = req.body.code; // authZ code
@@ -165,7 +155,7 @@ router.get("/signout", (req, res) => {
    * session with Azure AD. For more information, visit:
    * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
    */
-  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
+  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout`;
 
   req.session.destroy(() => {
     res.redirect(logoutUri);

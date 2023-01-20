@@ -57,6 +57,7 @@ module.exports = (app) => {
       resave: false,
       saveUninitialized: true,
       cookie: {
+        sameSite: false,
         secure: false, // set this to true on production
       },
     })
@@ -73,10 +74,10 @@ module.exports = (app) => {
         // TODO: reconsider performance (atm) each request waits for a refreshed token
         await acquireTokenSilent(req, res);
       } catch (error) {
+        req.session.isAuthenticated = false;
         res.send(401, {
           message: "Your session has expired. Please re-login.",
         });
-        return;
       }
     }
 
