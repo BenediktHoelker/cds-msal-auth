@@ -73,11 +73,17 @@ module.exports = (app) => {
         // Acquire Token Silently to be used in MS Graph call
         // TODO: reconsider performance (atm) each request waits for a refreshed token
         await acquireTokenSilent(req, res);
-      } catch (error) {
+      } catch (err) {
         req.session.isAuthenticated = false;
-        res.send(401, {
-          message: "Your session has expired. Please re-login.",
+        res.status(401).json({
+          status: 401,
+          name: err.name,
+          path: err.path,
+          errors: err.errors,
+          message: err.errorMessage,
+          stack: err.stack,
         });
+        return;
       }
     }
 
