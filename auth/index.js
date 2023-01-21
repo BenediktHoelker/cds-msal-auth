@@ -22,7 +22,7 @@ const authRouter = require("./routes/auth");
 async function acquireTokenSilent(req, res, next) {
   // Find all accounts
   // const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
-  const msalTokenCache = msalInstance.getTokenCache();
+  // const msalTokenCache = msalInstance.getTokenCache();
 
   // Account selection logic would go here
   // const [account] = await msalTokenCache.getAllAccounts();
@@ -68,7 +68,8 @@ module.exports = (app) => {
   app.use("/auth", authRouter);
 
   app.use("/", async (req, res, next) => {
-    if (req.path.includes("/v2/") || req.path.includes("/v4/")) {
+    // TODO: check for server-address with regex: https://blogs.sap.com/2021/10/14/create-authenticated-endpoints-in-cap-that-serve-any-type-of-response/
+    if (req.path.includes("/timetracking/") || req.path.includes("/v4/")) {
       try {
         // Acquire Token Silently to be used in MS Graph call
         // TODO: reconsider performance (atm) each request waits for a refreshed token
