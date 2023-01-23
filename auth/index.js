@@ -84,7 +84,7 @@ module.exports = (app) => {
 
   app.get("/", async (req, res, next) => next());
 
-  app.use("/v2/timetracking", isAuthenticated, async (req, res, next) => {
+  app.use("/v2", isAuthenticated, async (req, res, next) => {
     // TODO: check for server-address with regex: https://blogs.sap.com/2021/10/14/create-authenticated-endpoints-in-cap-that-serve-any-type-of-response/
     // if (req.path.includes("/timetracking/")) {
     try {
