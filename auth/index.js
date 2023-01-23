@@ -17,6 +17,8 @@ const { msalConfig, msalInstance } = require("./authConfig");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
+const router = express.Router();
+
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req, res, next) {
@@ -38,6 +40,15 @@ async function acquireTokenSilent(req, res, next) {
   return msalInstance.acquireTokenSilent(silentRequest).then((response) => {
     req.session.accessToken = response.accessToken;
   });
+}
+
+// custom middleware to check auth state
+function isAuthenticated(req, res, next) {
+  if (!req.session.isAuthenticated) {
+    return res.redirect("/auth/signin"); // redirect to sign-in route
+  }
+
+  next();
 }
 
 module.exports = (app) => {
@@ -63,47 +74,40 @@ module.exports = (app) => {
     })
   );
 
-  // app.use("/", indexRouter);
+  router.get(
+    "/id",
+    isAuthenticated, // check if user is authenticated
+    async (req, res, next) => {
+      res.render("id", { idTokenClaims: req.session.account.idTokenClaims });
+    }
+  );
+
+  app.get("/", async (req, res, next) => next());
+
+  app.use("/v2/timetracking", isAuthenticated, async (req, res, next) => {
+    // TODO: check for server-address with regex: https://blogs.sap.com/2021/10/14/create-authenticated-endpoints-in-cap-that-serve-any-type-of-response/
+    // if (req.path.includes("/timetracking/")) {
+    try {
+      // Acquire Token Silently to be used in MS Graph call
+      // TODO: reconsider performance (atm) each request waits for a refreshed token
+      await acquireTokenSilent(req, res);
+    } catch (err) {
+      req.session.isAuthenticated = false;
+      res.status(401).json({
+        status: 401,
+        name: err.name,
+        path: err.path,
+        errors: err.errors,
+        message: err.errorMessage,
+        stack: err.stack,
+      });
+      return;
+    }
+    // }
+
+    next();
+  });
+
   app.use("/users", usersRouter);
   app.use("/auth", authRouter);
-
-  app.use("/", async (req, res, next) => {
-    // TODO: check for server-address with regex: https://blogs.sap.com/2021/10/14/create-authenticated-endpoints-in-cap-that-serve-any-type-of-response/
-    if (req.path.includes("/timetracking/") || req.path.includes("/v4/")) {
-      try {
-        // Acquire Token Silently to be used in MS Graph call
-        // TODO: reconsider performance (atm) each request waits for a refreshed token
-        await acquireTokenSilent(req, res);
-      } catch (err) {
-        req.session.isAuthenticated = false;
-        res.status(401).json({
-          status: 401,
-          name: err.name,
-          path: err.path,
-          errors: err.errors,
-          message: err.errorMessage,
-          stack: err.stack,
-        });
-        return;
-      }
-    }
-
-    if (
-      req.session.isAuthenticated ||
-      req.path === "/auth/signin" ||
-      // req.path === "/index.html" ||
-      req.path.includes("/resources") ||
-      req.path.includes("service-worker.js") ||
-      req.path.includes(".woff2") ||
-      req.path.includes("iot_logo") ||
-      req.path.includes("i18n") ||
-      req.path.includes("favicon.ico") ||
-      req.path.includes("manifest.json") ||
-      req.path.includes("manifest.webmanifest")
-    ) {
-      next();
-    } else {
-      res.redirect("/auth/signin");
-    }
-  });
 };
