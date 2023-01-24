@@ -59,7 +59,6 @@ function isAuthenticated(req, res, next) {
 
 module.exports = function (options = {}) {
   const router = express.Router();
-
   router.use(logger("dev"));
   router.use(express.json());
   router.use(cookieParser());
@@ -80,10 +79,6 @@ module.exports = function (options = {}) {
         secure: false, // set this to true on production
       },
     })
-  );
-
-  router.use("/index.html", isAuthenticatedIndexHTML, async (req, res, next) =>
-    next()
   );
 
   router.use("/v2", isAuthenticated, async (req, res, next) => {
@@ -113,5 +108,10 @@ module.exports = function (options = {}) {
   router.use("/users", usersRouter);
   router.use("/auth", authRouter);
 
+  router.use(
+    ["/index.html", ""],
+    isAuthenticatedIndexHTML,
+    async (req, res, next) => next()
+  );
   return router;
 };
