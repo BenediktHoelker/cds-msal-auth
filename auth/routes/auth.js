@@ -4,15 +4,18 @@
  */
 
 const express = require("express");
+const msal = require("@azure/msal-node");
+
 const {
   msalConfig,
   msalInstance,
-  cryptoProvider,
   REDIRECT_URI,
   POST_LOGOUT_REDIRECT_URI,
 } = require("../authConfig");
 
 const router = express.Router();
+// const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
+const cryptoProvider = new msal.CryptoProvider();
 
 /**
  * Prepares the auth code request parameters and initiates the first leg of auth code flow
@@ -43,8 +46,8 @@ async function redirectToAuthCodeUrl(
    * By manipulating the request objects below before each request, we can obtain
    * auth artifacts with desired claims. For more information, visit:
    * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationurlrequest
+   * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationcoderequest
    * */
-
   req.session.authCodeUrlRequest = {
     redirectUri: REDIRECT_URI,
     responseMode: "form_post", // recommended for confidential clients
@@ -74,19 +77,35 @@ router.get("/signin", async (req, res, next) => {
   // create a GUID for crsf
   req.session.csrfToken = cryptoProvider.createNewGuid();
 
+  /**
+   * The MSAL Node library allows you to pass your custom state as state parameter in the Request object.
+   * The state parameter can also be used to encode information of the app's state before redirect.
+   * You can pass the user's state in the app, such as the page or view they were on, as input to this parameter.
+   */
   const state = cryptoProvider.base64Encode(
     JSON.stringify({
       csrfToken: req.session.csrfToken,
-      redirectTo: "/",
+      redirectTo: "/index.html",
     })
   );
 
   const authCodeUrlRequestParams = {
     state,
+
+    /**
+     * By default, MSAL Node will add OIDC scopes to the auth code url request. For more information, visit:
+     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
+     */
+
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
   const authCodeRequestParams = {
+    /**
+     * By default, MSAL Node will add OIDC scopes to the auth code request. For more information, visit:
+     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
+     */
+
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
@@ -106,24 +125,18 @@ router.post("/redirect", async (req, res, next) => {
 
     // check if csrfToken matches
     if (state.csrfToken === req.session.csrfToken) {
-      req.session.authCodeRequest.code = req.body.code; // auth code
+      req.session.authCodeRequest.code = req.body.code; // authZ code
       req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier; // PKCE Code Verifier
 
       try {
         const tokenResponse = await msalInstance.acquireTokenByCode(
           req.session.authCodeRequest
         );
-
-        const tokenCache = msalInstance.getTokenCache().serialize();
-        const refreshTokenObject = JSON.parse(tokenCache).RefreshToken;
-        const refreshToken =
-          refreshTokenObject[Object.keys(refreshTokenObject)[0]].secret;
-
         req.session.accessToken = tokenResponse.accessToken;
         req.session.idToken = tokenResponse.idToken;
         req.session.account = tokenResponse.account;
-        req.session.homeAccountId = tokenResponse.account.homeAccountId;
         req.session.isAuthenticated = true;
+
         res.redirect(state.redirectTo);
       } catch (error) {
         next(error);
@@ -137,7 +150,12 @@ router.post("/redirect", async (req, res, next) => {
 });
 
 router.get("/signout", (req, res) => {
-  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
+  /**
+   * Construct a logout URI and redirect the user to end the
+   * session with Azure AD. For more information, visit:
+   * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
+   */
+  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout`;
 
   req.session.destroy(() => {
     res.redirect(logoutUri);

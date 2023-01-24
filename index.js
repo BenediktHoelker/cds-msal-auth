@@ -2,7 +2,6 @@ const cds = require("@sap/cds");
 
 // To debug this module set export DEBUG=cap-msal-auth
 const DEBUG = cds.DEBUG?.("cap-msal-auth");
-const { msalInstance } = require("./auth/authConfig");
 
 DEBUG?.("[auth] - loading custom auth handler");
 
@@ -12,33 +11,6 @@ const CDSUser = class extends cds.User {
     return role === "any" || this._roles[role];
   }
 };
-
-// Initiates Acquire Token Silent flow
-// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
-async function acquireTokenSilent(req, res, next) {
-  // Find all accounts
-  const msalTokenCache = msalInstance.getTokenCache();
-
-  // Account selection logic would go here
-  // const [account] = await msalTokenCache.getAllAccounts();
-
-  const { account } = req.session || {}; // Select Account code
-
-  // Build silent request after account is selected
-  const silentRequest = {
-    account,
-    scopes: ["User.Read", "Calendars.ReadWrite"],
-  };
-
-  // Acquire Token Silently to be used in MS Graph call
-  const response = await msalInstance.acquireTokenSilent(silentRequest);
-
-  req.session.accessToken = response.accessToken;
-  req.session.idToken = response.idToken;
-  req.session.account = response.account;
-  req.session.homeAccountId = response.account.homeAccountId;
-  req.session.isAuthenticated = true;
-}
 
 function formatSchema(tenantID) {
   // postgreSQL does not allow first character "0" in schema name
@@ -56,8 +28,6 @@ function formatSchema(tenantID) {
  * @param {function} next
  */
 module.exports = async (req, res, next) => {
-  acquireTokenSilent(req);
-
   const { tenantId, username } = req.session?.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
 
