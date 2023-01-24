@@ -43,7 +43,7 @@ async function acquireTokenSilent(req, res, next) {
 }
 
 // custom middleware to check auth state
-function isAuthenticated(req, res, next) {
+function isAuthenticatedIndexHTML(req, res, next) {
   if (!req.session.isAuthenticated) {
     return res.redirect("/auth/signin"); // redirect to sign-in route
   }
@@ -51,18 +51,26 @@ function isAuthenticated(req, res, next) {
   next();
 }
 
-module.exports = (app) => {
-  app.use(logger("dev"));
-  app.use(express.json());
-  app.use(cookieParser());
-  app.use(express.urlencoded({ extended: false }));
+function isAuthenticated(req, res, next) {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).send(); // redirect to sign-in route
+  }
+
+  next();
+}
+
+module.exports = function (options = {}) {
+  router.use(logger("dev"));
+  router.use(express.json());
+  router.use(cookieParser());
+  router.use(express.urlencoded({ extended: false }));
   // app.use(express.static(path.join(__dirname, "public")));
 
   /**
    * Using express-session middleware for persistent user session. Be sure to
    * familiarize yourself with available options. Visit: https://www.npmjs.com/package/express-session
    */
-  app.use(
+  router.use(
     session({
       secret: process.env.EXPRESS_SESSION_SECRET,
       resave: false,
@@ -74,17 +82,11 @@ module.exports = (app) => {
     })
   );
 
-  router.get(
-    "/id",
-    isAuthenticated, // check if user is authenticated
-    async (req, res, next) => {
-      res.render("id", { idTokenClaims: req.session.account.idTokenClaims });
-    }
+  router.use("/index.html", isAuthenticatedIndexHTML, async (req, res, next) =>
+    next()
   );
 
-  app.get("/", async (req, res, next) => next());
-
-  app.use("/v2", isAuthenticated, async (req, res, next) => {
+  router.use("/v2", isAuthenticated, async (req, res, next) => {
     // TODO: check for server-address with regex: https://blogs.sap.com/2021/10/14/create-authenticated-endpoints-in-cap-that-serve-any-type-of-response/
     // if (req.path.includes("/timetracking/")) {
     try {
@@ -108,6 +110,8 @@ module.exports = (app) => {
     next();
   });
 
-  app.use("/users", usersRouter);
-  app.use("/auth", authRouter);
+  router.use("/users", usersRouter);
+  router.use("/auth", authRouter);
+
+  return router;
 };
