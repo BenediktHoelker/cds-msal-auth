@@ -17,8 +17,6 @@ const { msalConfig, msalInstance } = require("./authConfig");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
-const router = express.Router();
-
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req, res, next) {
@@ -60,6 +58,8 @@ function isAuthenticated(req, res, next) {
 }
 
 module.exports = function (options = {}) {
+  const router = express.Router();
+
   router.use(logger("dev"));
   router.use(express.json());
   router.use(cookieParser());
