@@ -155,7 +155,7 @@ router.get("/signout", (req, res) => {
    * session with Azure AD. For more information, visit:
    * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
    */
-  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout`;
+  const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
 
   req.session.destroy(() => {
     res.redirect(logoutUri);
