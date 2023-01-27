@@ -10,16 +10,26 @@ const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 
-const msal = require("@azure/msal-node");
-const { msalConfig, msalInstance } = require("./authConfig");
+const { msalInstance } = require("./authConfig");
 
-// var indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
+// https://stackoverflow.com/questions/27117337/exclude-route-from-express-middleware
+function unless(middleware, ...paths) {
+  return function (req, res, next) {
+    const pathCheck = paths.some((path) => path === req.path);
+    if (pathCheck) {
+      next();
+    } else {
+      middleware(req, res, next);
+    }
+  };
+}
+
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
-async function acquireTokenSilent(req, res, next) {
+async function acquireTokenSilent(req) {
   // Find all accounts
   // const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
   // const msalTokenCache = msalInstance.getTokenCache();
@@ -41,23 +51,24 @@ async function acquireTokenSilent(req, res, next) {
 }
 
 // custom middleware to check auth state
-function isAuthenticatedIndexHTML(req, res, next) {
+function redirectToSignin(req, res, next) {
   if (!req.session.isAuthenticated) {
-    return res.redirect("/auth/signin"); // redirect to sign-in route
+    res.redirect("/auth/signin"); // redirect to sign-in route
+    return;
   }
-
   next();
 }
 
 function isAuthenticated(req, res, next) {
   if (!req.session.isAuthenticated) {
-    return res.status(401).send(); // redirect to sign-in route
+    res.status(401).send("Unauthorized"); // redirect to sign-in route
+    return;
   }
 
   next();
 }
 
-module.exports = function (options = {}) {
+module.exports = function () {
   const router = express.Router();
   router.use(logger("dev"));
   router.use(express.json());
@@ -90,28 +101,28 @@ module.exports = function (options = {}) {
       await acquireTokenSilent(req, res);
     } catch (err) {
       req.session.isAuthenticated = false;
-      res.status(401).json({
-        status: 401,
-        name: err.name,
-        path: err.path,
-        errors: err.errors,
-        message: err.errorMessage,
-        stack: err.stack,
-      });
+      res.status(401);
+      res.send(err.errorMessage);
       return;
     }
-    // }
 
     next();
   });
 
   router.use("/users", usersRouter);
   router.use("/auth", authRouter);
-
   router.use(
-    ["/index.html", ""],
-    isAuthenticatedIndexHTML,
-    async (req, res, next) => next()
+    unless(
+      redirectToSignin,
+      "/auth/signin",
+      "/auth/redirect",
+      "/auth/logout",
+      "/images/iot_logo.png",
+      "/images/iot_logo_144.png",
+      "/images/iot_logo_196.png",
+      "/images/iot_logo_198.png"
+    )
   );
+
   return router;
 };
