@@ -61,7 +61,7 @@ function redirectToSignin(req, res, next) {
 
 function isAuthenticated(req, res, next) {
   if (!req.session.isAuthenticated) {
-    res.status(401).send("Unauthorized"); // redirect to sign-in route
+    res.status(401).send("Unauthorized");
     return;
   }
 
