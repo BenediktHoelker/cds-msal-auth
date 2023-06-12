@@ -85,7 +85,7 @@ router.get("/signin", async (req, res, next) => {
   const state = cryptoProvider.base64Encode(
     JSON.stringify({
       csrfToken: req.session.csrfToken,
-      redirectTo: "/index.html",
+      redirectTo: "/",
     })
   );
 
@@ -142,6 +142,8 @@ router.post("/redirect", async (req, res, next) => {
         next(error);
       }
     } else {
+      console.error(`State csrf token: ${state.csrfToken}`);
+      console.error(`Session csrf token: ${req.session.csrfToken}`);
       next(new Error("csrf token does not match"));
     }
   } else {
