@@ -85,7 +85,7 @@ router.get("/signin", async (req, res, next) => {
   const state = cryptoProvider.base64Encode(
     JSON.stringify({
       csrfToken: req.session.csrfToken,
-      redirectTo: "/",
+      redirectTo: "/index.html",
     })
   );
 
@@ -151,13 +151,21 @@ router.post("/redirect", async (req, res, next) => {
   }
 });
 
-router.get("/signout", (req, res) => {
+router.get("/signout", async (req, res) => {
   /**
    * Construct a logout URI and redirect the user to end the
    * session with Azure AD. For more information, visit:
    * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
    */
   const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
+
+  const msalTokenCache = msalInstance.getTokenCache();
+
+  // Account selection logic would go here
+  const [account] = await msalTokenCache.getAllAccounts();
+  if (account) {
+    msalTokenCache.removeAccount(account);
+  }
 
   req.session.destroy(() => {
     res.redirect(logoutUri);
