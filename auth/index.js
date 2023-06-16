@@ -8,11 +8,35 @@ const express = require("express");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const cors = require("cors");
 
 const { msalInstance } = require("./authConfig");
 
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
+
+const whitelist = ["http://localhost:8000", "http://localhost:8080"]; // white list consumers
+const corsOptions = {
+  origin(origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  credentials: true, // Credentials are cookies, authorization headers or TLS client certificates.
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "device-remember-token",
+    "Access-Control-Allow-Origin",
+    "Origin",
+    "Accept",
+  ],
+};
 
 // https://stackoverflow.com/questions/27117337/exclude-route-from-express-middleware
 function unless(middleware, ...paths) {
@@ -75,6 +99,8 @@ module.exports = function () {
   router.use(cookieParser());
   router.use(express.urlencoded({ extended: false }));
 
+  router.use(cors(corsOptions));
+
   /**
    * Using express-session middleware for persistent user session. Be sure to
    * familiarize yourself with available options. Visit: https://www.npmjs.com/package/express-session
@@ -93,6 +119,7 @@ module.exports = function () {
 
   router.use("/users", usersRouter);
   router.use("/auth", authRouter);
+
   router.use(
     unless(
       isAuthenticated,
