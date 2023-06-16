@@ -54,7 +54,7 @@ async function acquireTokenSilent(req) {
 
 // custom middleware to check auth state
 async function isAuthenticated(req, res, next) {
-  if (req.originalUrl !== "/index.html") {
+  if (req.originalUrl !== "/index.html" && req.originalUrl !== "/") {
     return next();
   }
 

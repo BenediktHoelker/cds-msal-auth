@@ -167,9 +167,7 @@ router.get("/signout", async (req, res) => {
     msalTokenCache.removeAccount(account);
   }
 
-  req.session.destroy(() => {
-    res.redirect(logoutUri);
-  });
+  return req.session.destroy(() => res.redirect(logoutUri));
 });
 
 module.exports = router;
