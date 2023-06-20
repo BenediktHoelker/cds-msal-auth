@@ -13,18 +13,6 @@ const { msalInstance } = require("./authConfig");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
-// https://stackoverflow.com/questions/27117337/exclude-route-from-express-middleware
-function unless(middleware, ...paths) {
-  return function (req, res, next) {
-    const pathCheck = paths.some((path) => path === req.path);
-    if (pathCheck) {
-      next();
-    } else {
-      middleware(req, res, next);
-    }
-  };
-}
-
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req) {
@@ -53,8 +41,12 @@ async function acquireTokenSilent(req) {
 }
 
 // custom middleware to check auth state
-async function isAuthenticated(req, res, next) {
-  if (req.originalUrl !== "/index.html" && req.originalUrl !== "/") {
+async function ensureAuthentication(req, res, next) {
+  if (
+    req.originalUrl !== "/index.html" &&
+    req.originalUrl !== "/" &&
+    !req.originalUrl?.startsWith("/v2")
+  ) {
     return next();
   }
 
@@ -95,7 +87,7 @@ module.exports = function () {
 
   router.use("/users", usersRouter);
   router.use("/auth", authRouter);
-  router.use("/", isAuthenticated);
+  router.use("/", ensureAuthentication);
 
   return router;
 };
