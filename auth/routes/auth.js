@@ -135,6 +135,7 @@ router.post("/redirect", async (req, res, next) => {
         req.session.accessToken = tokenResponse.accessToken;
         req.session.idToken = tokenResponse.idToken;
         req.session.account = tokenResponse.account;
+        req.session.homeAccountId = tokenResponse.account.homeAccountId;
         req.session.isAuthenticated = true;
 
         res.redirect(state.redirectTo);

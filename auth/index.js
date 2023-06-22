@@ -20,7 +20,13 @@ async function acquireTokenSilent(req) {
   const msalTokenCache = msalInstance.getTokenCache();
 
   // Account selection logic would go here
-  const [account] = await msalTokenCache.getAllAccounts();
+  const account = await msalTokenCache.getAccountByHomeId(
+    req.session?.homeAccountId
+  );
+
+  if (!account) {
+    throw new Error("Not logged in.");
+  }
 
   // The MSGraph token is shortlived => Refresh it regularly
   let forceRefresh = true;
@@ -56,6 +62,7 @@ async function ensureAuthentication(req, res, next) {
     req.session.accessToken = tokenResponse.accessToken;
     req.session.idToken = tokenResponse.idToken;
     req.session.account = tokenResponse.account;
+    req.session.homeAccountId = tokenResponse.account.homeAccountId;
   } catch (error) {
     return res.redirect("/auth/signin"); // redirect to sign-in route
   }
