@@ -153,21 +153,15 @@ router.post("/redirect", async (req, res, next) => {
 });
 
 router.get("/signout", async (req, res) => {
+  // const { homeAccountId } = req.session;
+  // const currentAccount = msalInstance.getAccountByHomeId(homeAccountId);
+
   /**
    * Construct a logout URI and redirect the user to end the
    * session with Azure AD. For more information, visit:
    * https://docs.microsoft.com/azure/active-directory/develop/v2-protocols-oidc#send-a-sign-out-request
    */
   const logoutUri = `${msalConfig.auth.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=${POST_LOGOUT_REDIRECT_URI}`;
-
-  const msalTokenCache = msalInstance.getTokenCache();
-
-  // Account selection logic would go here
-  const [account] = await msalTokenCache.getAllAccounts();
-  if (account) {
-    msalTokenCache.removeAccount(account);
-  }
-
   return req.session.destroy(() => res.redirect(logoutUri));
 });
 
