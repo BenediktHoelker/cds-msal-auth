@@ -123,29 +123,22 @@ router.post("/redirect", async (req, res, next) => {
   if (req.body.state) {
     const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
 
-    // check if csrfToken matches
-    if (state.csrfToken === req.session.csrfToken) {
-      req.session.authCodeRequest.code = req.body.code; // authZ code
-      req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier; // PKCE Code Verifier
+    req.session.authCodeRequest.code = req.body.code; // auth code
+    req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier; // PKCE Code Verifier
 
-      try {
-        const tokenResponse = await msalInstance.acquireTokenByCode(
-          req.session.authCodeRequest
-        );
-        req.session.accessToken = tokenResponse.accessToken;
-        req.session.idToken = tokenResponse.idToken;
-        req.session.account = tokenResponse.account;
-        req.session.homeAccountId = tokenResponse.account.homeAccountId;
-        req.session.isAuthenticated = true;
+    try {
+      const tokenResponse = await msalInstance.acquireTokenByCode(
+        req.session.authCodeRequest
+      );
+      req.session.accessToken = tokenResponse.accessToken;
+      req.session.idToken = tokenResponse.idToken;
+      req.session.account = tokenResponse.account;
+      req.session.homeAccountId = tokenResponse.account.homeAccountId;
+      req.session.isAuthenticated = true;
 
-        res.redirect(state.redirectTo);
-      } catch (error) {
-        next(error);
-      }
-    } else {
-      console.error(`State csrf token: ${state.csrfToken}`);
-      console.error(`Session csrf token: ${req.session.csrfToken}`);
-      next(new Error("csrf token does not match"));
+      res.redirect(state.redirectTo);
+    } catch (error) {
+      next(error);
     }
   } else {
     next(new Error("state is missing"));
