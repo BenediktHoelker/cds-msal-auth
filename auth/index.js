@@ -86,6 +86,7 @@ module.exports = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
+        maxAge: 86400000,
         sameSite: false,
         secure: false, // set this to true on production
       },
