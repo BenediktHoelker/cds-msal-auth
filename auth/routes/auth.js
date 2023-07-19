@@ -120,28 +120,36 @@ router.get("/signin", async (req, res, next) => {
 });
 
 router.post("/redirect", async (req, res, next) => {
-  if (req.body.state) {
-    const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
+  if (!req.body || !req.body.state) {
+    return next(new Error("Error: response not found"));
+  }
 
-    req.session.authCodeRequest.code = req.body.code; // auth code
-    req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier; // PKCE Code Verifier
+  const authCodeRequest = {
+    ...req.session.authCodeRequest,
+    code: req.body.code,
+    codeVerifier: req.session.pkceCodes.verifier,
+  };
 
-    try {
-      const tokenResponse = await msalInstance.acquireTokenByCode(
-        req.session.authCodeRequest
-      );
-      req.session.accessToken = tokenResponse.accessToken;
-      req.session.idToken = tokenResponse.idToken;
-      req.session.account = tokenResponse.account;
-      req.session.homeAccountId = tokenResponse.account.homeAccountId;
-      req.session.isAuthenticated = true;
-
-      res.redirect(state.redirectTo);
-    } catch (error) {
-      next(error);
+  try {
+    if (req.session.tokenCache) {
+      msalInstance.getTokenCache().deserialize(req.session.tokenCache);
     }
-  } else {
-    next(new Error("state is missing"));
+
+    const tokenResponse = await msalInstance.acquireTokenByCode(
+      authCodeRequest,
+      req.body
+    );
+
+    req.session.accessToken = tokenResponse.accessToken;
+    req.session.idToken = tokenResponse.idToken;
+    req.session.account = tokenResponse.account;
+    req.session.homeAccountId = tokenResponse.account.homeAccountId;
+    req.session.isAuthenticated = true;
+
+    const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
+    return res.redirect(state.redirectTo);
+  } catch (error) {
+    next(error);
   }
 });
 
