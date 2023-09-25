@@ -5,11 +5,12 @@
 require("dotenv").config();
 
 const express = require("express");
+// const expressStaticGzip = require("express-static-gzip");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const compression = require("compression");
 const { msalInstance } = require("./authConfig");
-
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
@@ -48,13 +49,13 @@ async function acquireTokenSilent(req) {
 
 // custom middleware to check auth state
 async function ensureAuthentication(req, res, next) {
-  if (
-    req.originalUrl !== "/index.html" &&
-    req.originalUrl !== "/" &&
-    !req.originalUrl?.startsWith("/v2")
-  ) {
-    return next();
-  }
+  // if (
+  //   req.originalUrl !== "/app/index.html" &&
+  //   req.originalUrl !== "/app" &&
+  //   !req.originalUrl?.startsWith("/v2")
+  // ) {
+  //   return next();
+  // }
 
   try {
     const tokenResponse = await acquireTokenSilent(req, res);
@@ -73,6 +74,8 @@ module.exports = function () {
   const router = express.Router();
   router.use(logger("dev"));
   router.use(express.json());
+  // compress all responses
+  router.use(compression());
   router.use(cookieParser());
   router.use(express.urlencoded({ extended: false }));
 
@@ -95,7 +98,12 @@ module.exports = function () {
 
   router.use("/users", usersRouter);
   router.use("/auth", authRouter);
-  router.use("/", ensureAuthentication);
+  router.use("/v2", ensureAuthentication);
+  router.use(
+    "/",
+    ensureAuthentication,
+    express.static(`${__dirname}/../../../dist`)
+  );
 
   return router;
 };
