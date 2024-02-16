@@ -43,11 +43,7 @@ async function redirectToAuthCodeUrl(
   };
 
   /**
-   * By manipulating the request objects below before each request, we can obtain
-   * auth artifacts with desired claims. For more information, visit:
-   * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationurlrequest
-   * https://azuread.github.io/microsoft-authentication-library-for-js/ref/modules/_azure_msal_node.html#authorizationcoderequest
-   * */
+   * By manipulating the request objects below before each request, we can obtain auth artifacts with desired claims. */
   req.session.authCodeUrlRequest = {
     redirectUri: REDIRECT_URI,
     responseMode: "form_post", // recommended for confidential clients
@@ -91,21 +87,10 @@ router.get("/signin", async (req, res, next) => {
 
   const authCodeUrlRequestParams = {
     state,
-
-    /**
-     * By default, MSAL Node will add OIDC scopes to the auth code url request. For more information, visit:
-     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
-     */
-
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
   const authCodeRequestParams = {
-    /**
-     * By default, MSAL Node will add OIDC scopes to the auth code request. For more information, visit:
-     * https://docs.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
-     */
-
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
@@ -122,6 +107,10 @@ router.get("/signin", async (req, res, next) => {
 router.post("/redirect", async (req, res, next) => {
   if (!req.body || !req.body.state) {
     return next(new Error("Error: response not found"));
+  }
+
+  if (!req.session.pkceCodes) {
+    return next(new Error("Error: PKCE Codes have not been registered"));
   }
 
   const authCodeRequest = {

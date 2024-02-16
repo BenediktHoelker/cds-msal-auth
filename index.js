@@ -48,6 +48,6 @@ module.exports = async (req, res, next) => {
     req.headers.authentication = true;
     next();
   } else {
-    res.status(401).send();
+    // res.status(401).send();
   }
 };

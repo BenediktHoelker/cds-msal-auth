@@ -14,9 +14,7 @@ const { msalInstance } = require("./authConfig");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
-// Initiates Acquire Token Silent flow
-// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
-async function acquireTokenSilent(req) {
+async function aquireValidAccount(req) {
   // Find all accounts
   const msalTokenCache = msalInstance.getTokenCache();
 
@@ -25,9 +23,13 @@ async function acquireTokenSilent(req) {
     req.session?.homeAccountId
   );
 
-  if (!account) {
-    throw new Error("Not logged in.");
-  }
+  return account;
+}
+
+// Initiates Acquire Token Silent flow
+// See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
+async function acquireTokenSilent(req) {
+  const account = await aquireValidAccount(req);
 
   // The MSGraph token is shortlived => Refresh it regularly
   let forceRefresh = true;
@@ -49,27 +51,21 @@ async function acquireTokenSilent(req) {
 
 // custom middleware to check auth state
 async function ensureAuthentication(req, res, next) {
-  // if (
-  //   req.originalUrl !== "/app/index.html" &&
-  //   req.originalUrl !== "/app" &&
-  //   !req.originalUrl?.startsWith("/v2")
-  // ) {
-  //   return next();
-  // }
-
   try {
-    const tokenResponse = await acquireTokenSilent(req, res);
+    const tokenResponse = await acquireTokenSilent(req, res, next);
 
     req.session.accessToken = tokenResponse.accessToken;
     req.session.idToken = tokenResponse.idToken;
     req.session.account = tokenResponse.account;
     req.session.homeAccountId = tokenResponse.account.homeAccountId;
   } catch (error) {
-    return res.redirect("/auth/signin"); // redirect to sign-in route
+    res.status(401);
+    res.send("Unauthorized. Please reload the page to log in.");
   }
 
   return next();
 }
+
 module.exports = function () {
   const router = express.Router();
   router.use(logger("dev"));
@@ -89,21 +85,28 @@ module.exports = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
-        maxAge: 86400000, // expire after one day
+        maxAge: 10000, // expire after one day
         sameSite: false,
         secure: false, // set this to true on production
       },
     })
   );
 
-  router.use("/users", usersRouter);
+  // router.use("/users", usersRouter);
   router.use("/auth", authRouter);
-  router.use("/v2", ensureAuthentication);
-  router.use(
-    "/",
-    ensureAuthentication,
-    express.static(`${__dirname}/../../../dist`)
-  );
+  // router.use("/index.html", ensureAuthentication);
+  router.use("/timetracking", ensureAuthentication);
+  router.use("/index.html", async (req, res, next) => {
+    const account = await aquireValidAccount(req);
+
+    if (!account) {
+      return res.redirect("/auth/signin");
+    }
+
+    return next();
+  }); // redirect to sign-in route);
+  // router.use("/v2", ensureAuthentication);
+  router.use("/", express.static(`${__dirname}/../../../dist`));
 
   return router;
 };
