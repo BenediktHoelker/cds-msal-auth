@@ -85,7 +85,7 @@ module.exports = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
-        maxAge: 10000, // expire after one day
+        maxAge: 86400000, // expire after one day
         sameSite: false,
         secure: false, // set this to true on production
       },
@@ -106,7 +106,22 @@ module.exports = function () {
   }); // redirect to sign-in route);
   router.use("/timetracking", ensureAuthentication);
   // router.use("/v2", ensureAuthentication);
-  router.use("/", express.static(`${__dirname}/../../../dist`));
+  router.use(
+    "/",
+    async (req, res, next) => {
+      if (req.url !== "/") {
+        return next();
+      }
+
+      const account = await aquireValidAccount(req);
+
+      if (!account) {
+        return res.redirect("/auth/signin");
+      }
+      return next();
+    },
+    express.static(`${__dirname}/../../../dist`)
+  );
 
   return router;
 };
