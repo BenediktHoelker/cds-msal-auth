@@ -68,7 +68,7 @@ async function ensureAuthentication(req, res, next) {
 module.exports = function () {
   const router = express.Router();
   router.use(logger("dev"));
-  router.use(express.json());
+  // router.use(express.json());
   // compress all responses
   router.use(compression());
   router.use(cookieParser());
