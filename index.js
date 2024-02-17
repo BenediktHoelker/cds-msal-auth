@@ -31,23 +31,19 @@ module.exports = async (req, res, next) => {
   const { tenantId, username } = req.session?.account || {};
   DEBUG?.(`[auth] - user defined?${!!username}`);
 
-  if (username) {
-    const { roles = [] } = req.session.account.idTokenClaims;
+  const { roles = [] } = req.session.account.idTokenClaims;
 
-    req.user = new CDSUser({
-      id: username,
-      tenant: tenantId,
-      _roles: ["authenticated-user", ...roles],
-    });
+  req.user = new CDSUser({
+    id: username,
+    tenant: tenantId,
+    _roles: ["authenticated-user", ...roles],
+  });
 
-    req.user.accessToken = req.session.accessToken;
-    req.user.homeAccountId = req.session.homeAccountId;
-    req.user.account = req.session.account;
-    req.user.attr.tenant = tenantId;
-    req.user.schema = formatSchema(tenantId);
-    req.headers.authentication = true;
-    next();
-  } else {
-    // res.status(401).send();
-  }
+  req.user.accessToken = req.session.accessToken;
+  req.user.homeAccountId = req.session.homeAccountId;
+  req.user.account = req.session.account;
+  req.user.attr.tenant = tenantId;
+  req.user.schema = formatSchema(tenantId);
+  req.headers.authentication = true;
+  next();
 };

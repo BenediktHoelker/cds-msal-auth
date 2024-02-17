@@ -7,11 +7,10 @@ require("dotenv").config();
 const express = require("express");
 // const expressStaticGzip = require("express-static-gzip");
 const session = require("express-session");
+const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
-const compression = require("compression");
 const { msalInstance } = require("./authConfig");
-const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
 async function aquireValidAccount(req) {
@@ -61,7 +60,7 @@ async function ensureAuthentication(req, res, next) {
     return next();
   } catch (error) {
     res.status(401);
-    res.send("Unauthorized. Please reload the page to log in.");
+    res.send({ messge: "Unauthorized. Please reload the page to log in." });
     return res;
   }
 }
@@ -85,7 +84,7 @@ module.exports = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
-        maxAge: 86400000, // expire after one day
+        maxAge: Number(process.env.EXPRESS_COOKIE_MAX_AGE), // expire after one day
         sameSite: false,
         secure: false, // set this to true on production
       },
@@ -94,7 +93,7 @@ module.exports = function () {
 
   // router.use("/users", usersRouter);
   router.use("/auth", authRouter);
-  // router.use("/index.html", ensureAuthentication);
+  router.use("/timetracking", ensureAuthentication);
   router.use("/index.html", async (req, res, next) => {
     const account = await aquireValidAccount(req);
 
@@ -103,9 +102,7 @@ module.exports = function () {
     }
 
     return next();
-  }); // redirect to sign-in route);
-  router.use("/timetracking", ensureAuthentication);
-  // router.use("/v2", ensureAuthentication);
+  });
   router.use(
     "/",
     async (req, res, next) => {
@@ -120,7 +117,7 @@ module.exports = function () {
       }
       return next();
     },
-    express.static(`${__dirname}/../../../dist`)
+    express.static(`${__dirname}/../../../${process.env.UI5_WEBAPP_FOLDER}`)
   );
 
   return router;
