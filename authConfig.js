@@ -4,8 +4,6 @@
  */
 
 require("dotenv").config();
-const msal = require("@azure/msal-node");
-
 /**
  * Configuration object to be passed to MSAL instance on creation.
  * For a full list of MSAL Node configuration parameters, visit:
@@ -32,13 +30,13 @@ const msalConfig = {
 const { POST_LOGOUT_REDIRECT_URI, REDIRECT_URI } = process.env;
 const GRAPH_ME_ENDPOINT = `${process.env.GRAPH_API_ENDPOINT}/v1.0/me`;
 
-const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
-const cryptoProvider = new msal.CryptoProvider();
+// const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
+// const cryptoProvider = new msal.CryptoProvider();
 
 module.exports = {
   msalConfig,
-  msalInstance,
-  cryptoProvider,
+  // msalInstance,
+  // cryptoProvider,
   REDIRECT_URI,
   POST_LOGOUT_REDIRECT_URI,
   GRAPH_ME_ENDPOINT,

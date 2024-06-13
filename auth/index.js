@@ -5,31 +5,17 @@
 require("dotenv").config();
 
 const express = require("express");
-// const expressStaticGzip = require("express-static-gzip");
 const session = require("express-session");
 const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
-const { msalInstance } = require("./authConfig");
-const authRouter = require("./routes/auth");
-
-async function aquireValidAccount(req) {
-  // Find all accounts
-  const msalTokenCache = msalInstance.getTokenCache();
-
-  // Account selection logic would go here
-  const account = await msalTokenCache.getAccountByHomeId(
-    req.session?.homeAccountId
-  );
-
-  return account;
-}
+const authRouter = require("../routes/auth");
+const AuthProvider = require("./AuthProvider");
 
 // Initiates Acquire Token Silent flow
 // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-node/docs/accounts.md
 async function acquireTokenSilent(req) {
-  const account = await aquireValidAccount(req);
-
+  const account = req.session?.account;
   // The MSGraph token is shortlived => Refresh it regularly
   let forceRefresh = true;
   if (req.session.timer && Date.now() < req.session.timer + 60000 * 30) {
@@ -45,7 +31,7 @@ async function acquireTokenSilent(req) {
     scopes: ["User.Read", "Calendars.ReadWrite"],
   };
 
-  return msalInstance.acquireTokenSilent(silentRequest);
+  return AuthProvider.getMsalInstance().acquireTokenSilent(silentRequest);
 }
 
 // custom middleware to check auth state
@@ -56,11 +42,10 @@ async function ensureAuthentication(req, res, next) {
     req.session.accessToken = tokenResponse.accessToken;
     req.session.idToken = tokenResponse.idToken;
     req.session.account = tokenResponse.account;
-    req.session.homeAccountId = tokenResponse.account.homeAccountId;
     return next();
   } catch (error) {
     res.status(401);
-    res.send({ messge: "Unauthorized. Please reload the page to log in." });
+    res.send({ message: "Unauthorized. Please reload the page to log in." });
     return res;
   }
 }
@@ -91,11 +76,10 @@ module.exports = function () {
     })
   );
 
-  // router.use("/users", usersRouter);
   router.use("/auth", authRouter);
   router.use("/timetracking", ensureAuthentication);
   router.use("/index.html", async (req, res, next) => {
-    const account = await aquireValidAccount(req);
+    const account = req.session?.account;
 
     if (!account) {
       return res.redirect("/auth/signin");
@@ -103,6 +87,7 @@ module.exports = function () {
 
     return next();
   });
+
   router.use(
     "/",
     async (req, res, next) => {
@@ -110,7 +95,7 @@ module.exports = function () {
         return next();
       }
 
-      const account = await aquireValidAccount(req);
+      const account = req.session?.account;
 
       if (!account) {
         return res.redirect("/auth/signin");
